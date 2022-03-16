@@ -4,6 +4,16 @@
 #include <dirent.h>
 #include <string.h>
 
+struct info{
+    char* command;
+    char* pid;
+    char* user;
+    char* fd;
+    char* type;
+    char* node;
+    char* name;
+};
+
 char* get_command(const char *dir){
     char *cmdline_path = new char[30];
     strcpy(cmdline_path, dir);
@@ -14,9 +24,12 @@ char* get_command(const char *dir){
     return cmdline_txt;
 }
 
-void get_info(const char *dir){
+info get_info(const char *dir, char *pid){
+    info tmp;
     char* cmdline_txt = get_command(dir);
-    printf("%s\n", cmdline_txt);
+    tmp.command = cmdline_txt;
+    tmp.pid = pid;
+    return tmp;
 }
 
 
@@ -28,7 +41,8 @@ int main(int argc, char** argv){
         if(isnum(dirp->d_name)) {
             char dir[20] = "/proc/";
             strcat(dir, dirp->d_name);
-            get_info(dir);            
+            info tmp = get_info(dir, dirp->d_name);
+            printf("%s\t\t%s\n", tmp.command, tmp.pid);            
             }
     }
     return 0;
