@@ -43,18 +43,32 @@ char* get_user(const char* dir){
     return user;  
 }
 
-std::vector<info> get_info(const char *dir, char *pid){
+std::vector<char*> get_name_list(const char* file_name, const char* pid){
+    char* path = new char[300];
+    strcpy(path, "/proc/");
+    strcat(path, pid); 
+    strcat(path, "/");
+    strcat(path, file_name);
+    if(!strcmp(file_name, "cwd") || !strcmp(file_name, "root") || !strcmp(file_name, "exe")) return name_link_case(path);
+    if(!strcmp(file_name, "maps")) return name_maps_case(path);
+    return {};
+}
+
+std::vector<info> get_info(const char *dir, const char *pid){
     std::vector<const char*> match_file_list = match_file(dir);
     char* command = get_command(dir);
     char* user = get_user(dir);
     std::vector<info> tmp_list;
     for(const char* file_name : match_file_list){
-        info tmp;
-        tmp.command = command;
-        tmp.pid = pid;
-        tmp.user = user;
-        tmp.fd = fd_name(file_name);
-        tmp_list.push_back(tmp);
+        for(char* name : get_name_list(file_name, pid)){
+            info tmp;
+            tmp.command = command;
+            tmp.pid = (char*)pid;
+            tmp.user = user;
+            tmp.fd = fd_name(file_name);
+            tmp.name = name;
+            tmp_list.push_back(tmp);
+        }
     }
     return tmp_list;
 }
@@ -70,7 +84,7 @@ int main(int argc, char** argv){
         if(isnum(dirp->d_name)) {
             char dir[20] = "/proc/";
             strcat(dir, dirp->d_name);
-            std::vector<info> tmp_list = get_info(dir, dirp->d_name);
+            std::vector<info> tmp_list = get_info(dir, (const char*) dirp->d_name);
             for(info tmp : tmp_list)
                 info_list.push_back(tmp);
             }
@@ -81,6 +95,9 @@ int main(int argc, char** argv){
         printf("%s\t\t", tmp.pid);
         printf("%s\t\t", tmp.user);
         printf("%s\t\t", tmp.fd);
+        printf("\t\t");
+        printf("\t\t");
+        printf("%s\t\t", tmp.name);
         printf("\n");
     }
     return 0;

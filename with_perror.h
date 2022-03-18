@@ -1,6 +1,6 @@
 #include <dirent.h>
 #include <stdio.h>
-const char* field_name = "COMMAND         PID             USER            FD              TYPE            NODE            NAME";
+#include <sys/stat.h>
 
 DIR* Opendir(const char *name){
 	DIR *dp = opendir(name);
@@ -12,4 +12,10 @@ FILE* Fopen(const char* pathname, const char* mode){
 	FILE* file = fopen(pathname, mode);
 	if(file == NULL) perror("fopen");
 	return file;
+}
+
+int Stat(const char* pathname, struct stat *statbuf){
+	int s = stat(pathname, statbuf);
+	if(s < 0) perror("stat");
+	return s;
 }
