@@ -35,7 +35,7 @@ char* get_uid(const char *dir){
 
 std::vector<const char*> match_file(const char* dir){
     std::map<const char*, bool, my_cmp> file_exists;
-    std::vector<const char*> target_list = {"cwd", "root", "exe", "maps"};
+    std::vector<const char*> target_list = {"cwd", "root", "exe", "maps", "fd"};
     std::vector<const char*> match_file_list;
     DIR* dp = Opendir(dir);
     struct dirent* dirp;
@@ -88,4 +88,40 @@ std::vector<char*> name_maps_case(char* path){
         name_list.push_back(it->second); 
     }
     return name_list;
+}
+
+std::vector<char*> fd_open_mode(const char* path){
+    std::vector<char*> fd_list;
+    DIR* dp = opendir(path);
+    if(dp == NULL && errno == EACCES) return {};
+    else if(dp == NULL) perror("fd opendir"); 
+    struct dirent* dirp;
+    while((dirp = readdir(dp)) != NULL){
+        if(!strcmp(dirp->d_name, ".") || !strcmp(dirp->d_name, "..")) continue;
+        char* fd_path = new char [300];
+        strcpy(fd_path, path);
+        strcat(fd_path, "/");
+        strcat(fd_path, dirp->d_name);
+        struct stat buff;
+        lstat(fd_path, &buff);
+        if( (buff.st_mode & S_IRUSR) && (buff.st_mode & S_IWUSR)) {
+            char* fd = new char [10];
+            strcpy(fd, dirp->d_name);
+            strcat(fd, "u");
+            fd_list.push_back(fd);
+        }
+        else if(buff.st_mode & S_IRUSR){
+            char* fd = new char [10];
+            strcpy(fd, dirp->d_name);
+            strcat(fd, "r");
+            fd_list.push_back(fd);
+        }
+        else if(buff.st_mode & S_IWUSR){
+            char* fd = new char [10];
+            strcpy(fd, dirp->d_name);
+            strcat(fd, "w");
+            fd_list.push_back(fd);
+        }
+    }
+    return fd_list; 
 }
