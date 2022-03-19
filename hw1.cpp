@@ -51,6 +51,7 @@ std::vector<char*> get_name_list(const char* file_name, const char* pid){
     strcat(path, file_name);
     if(!strcmp(file_name, "cwd") || !strcmp(file_name, "root") || !strcmp(file_name, "exe")) return name_link_case(path);
     if(!strcmp(file_name, "maps")) return name_maps_case(path);
+    if(!strcmp(file_name, "fd")) return name_fd_case(path);
     return {};
 }
 
@@ -60,12 +61,28 @@ std::vector<info> get_info(const char *dir, const char *pid){
     char* user = get_user(dir);
     std::vector<info> tmp_list;
     for(const char* file_name : match_file_list){
-        for(char* name : get_name_list(file_name, pid)){
+        std::vector<char*> fd_name_list = fd_name(file_name, pid);
+        std::vector<char*> name_list = get_name_list(file_name, pid);
+        for(size_t i = 0 ; i < fd_name_list.size() ; i++){
+            char* fd = fd_name_list[i];
+            if(!strcmp(fd, "mem")){
+                for(char* name : name_list){
+                    info tmp;
+                    tmp.command = command;
+                    tmp.pid = (char*) pid;
+                    tmp.user = user;
+                    tmp.fd = fd;
+                    tmp.name = name;
+                    tmp_list.push_back(tmp); 
+                }
+                continue;
+            }
+            char* name = name_list[i];
             info tmp;
             tmp.command = command;
-            tmp.pid = (char*)pid;
+            tmp.pid = (char*) pid;
             tmp.user = user;
-            tmp.fd = fd_name(file_name);
+            tmp.fd = fd;
             tmp.name = name;
             tmp_list.push_back(tmp);
         }
@@ -91,14 +108,16 @@ int main(int argc, char** argv){
     }
 
     for(info tmp : info_list){
-        printf("%s\t\t", tmp.command);            
-        printf("%s\t\t", tmp.pid);
-        printf("%s\t\t", tmp.user);
-        printf("%s\t\t", tmp.fd);
-        printf("\t\t");
-        printf("\t\t");
-        printf("%s\t\t", tmp.name);
-        printf("\n");
+        if(strcmp(tmp.command, "hw1")){
+            printf("%s\t\t", tmp.command);            
+            printf("%s\t\t", tmp.pid);
+            printf("%s\t\t", tmp.user);
+            printf("%s\t\t", tmp.fd);
+            printf("\t\t");
+            printf("\t\t");
+            printf("%s\t\t", tmp.name);
+            printf("\n");
+        }
     }
     return 0;
 }

@@ -44,12 +44,56 @@ std::vector<const char*> match_file(const char* dir){
     return match_file_list;
 }
 
-char* fd_name(const char* file_name){
-    if(!strcmp(file_name, "cwd")) return (char*) "cwd";
-    if(!strcmp(file_name, "root")) return (char*) "rtd";
-    if(!strcmp(file_name, "exe")) return (char*) "txt";
-    if(!strcmp(file_name, "maps")) return (char*) "mem";
-    return (char*) "error";
+std::vector<char*> fd_open_mode(const char* path){
+    std::vector<char*> fd_list;
+    DIR* dp = opendir(path);
+    if(dp == NULL && errno == EACCES) return {(char*) "NOFD"};
+    else if(dp == NULL) perror("fd opendir"); 
+    struct dirent* dirp;
+    while((dirp = readdir(dp)) != NULL){
+        if(!strcmp(dirp->d_name, ".") || !strcmp(dirp->d_name, "..")) continue;
+        char* fd_path = new char [300];
+        strcpy(fd_path, path);
+        strcat(fd_path, "/");
+        strcat(fd_path, dirp->d_name);
+        struct stat buff;
+        lstat(fd_path, &buff);
+        if( (buff.st_mode & S_IRUSR) && (buff.st_mode & S_IWUSR)) {
+            char* fd = new char [10];
+            strcpy(fd, dirp->d_name);
+            strcat(fd, "u");
+            fd_list.push_back(fd);
+        }
+        else if(buff.st_mode & S_IRUSR){
+            char* fd = new char [10];
+            strcpy(fd, dirp->d_name);
+            strcat(fd, "r");
+            fd_list.push_back(fd);
+        }
+        else if(buff.st_mode & S_IWUSR){
+            char* fd = new char [10];
+            strcpy(fd, dirp->d_name);
+            strcat(fd, "w");
+            fd_list.push_back(fd);
+        }
+    }
+    return fd_list; 
+}
+
+std::vector<char*> fd_name(const char* file_name, const char* pid){
+    if(!strcmp(file_name, "cwd")) return { (char*) "cwd" };
+    if(!strcmp(file_name, "root")) return { (char*) "rtd" };
+    if(!strcmp(file_name, "exe")) return { (char*) "txt" };
+    if(!strcmp(file_name, "maps")) return { (char*) "mem" };
+    if(!strcmp(file_name, "fd")) {
+        char* path = new char [300];
+        strcpy(path, "/proc/");
+        strcat(path, pid);
+        strcat(path, "/");
+        strcat(path, "fd");
+        return fd_open_mode(path);
+    }
+    return { (char*) "error" };
 }
 
 std::vector<char*> name_link_case(char* path){
@@ -90,11 +134,16 @@ std::vector<char*> name_maps_case(char* path){
     return name_list;
 }
 
-std::vector<char*> fd_open_mode(const char* path){
-    std::vector<char*> fd_list;
+std::vector<char*> name_fd_case(const char* path){
+    std::vector<char*> name_fd_list;
     DIR* dp = opendir(path);
-    if(dp == NULL && errno == EACCES) return {};
-    else if(dp == NULL) perror("fd opendir"); 
+    if(dp == NULL && errno == EACCES) { 
+        char* fail_path = new char [300];
+        strcpy(fail_path, path);
+        strcat(fail_path, " (Permission denied)");
+        return { fail_path };
+    }
+    else if(dp == NULL) perror("fd opendir");
     struct dirent* dirp;
     while((dirp = readdir(dp)) != NULL){
         if(!strcmp(dirp->d_name, ".") || !strcmp(dirp->d_name, "..")) continue;
@@ -102,26 +151,10 @@ std::vector<char*> fd_open_mode(const char* path){
         strcpy(fd_path, path);
         strcat(fd_path, "/");
         strcat(fd_path, dirp->d_name);
-        struct stat buff;
-        lstat(fd_path, &buff);
-        if( (buff.st_mode & S_IRUSR) && (buff.st_mode & S_IWUSR)) {
-            char* fd = new char [10];
-            strcpy(fd, dirp->d_name);
-            strcat(fd, "u");
-            fd_list.push_back(fd);
-        }
-        else if(buff.st_mode & S_IRUSR){
-            char* fd = new char [10];
-            strcpy(fd, dirp->d_name);
-            strcat(fd, "r");
-            fd_list.push_back(fd);
-        }
-        else if(buff.st_mode & S_IWUSR){
-            char* fd = new char [10];
-            strcpy(fd, dirp->d_name);
-            strcat(fd, "w");
-            fd_list.push_back(fd);
-        }
+        char* target_path = new char [300];
+        int r = readlink(fd_path, target_path, 300);
+        if(r < 0) perror("readlink");
+        name_fd_list.push_back(target_path);
     }
-    return fd_list; 
+    return name_fd_list;
 }
