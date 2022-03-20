@@ -108,7 +108,35 @@ char* get_type(const char* name, const char* fd){
     return type;
 }
 
-
+char* get_node(const char* name, const char* fd){
+    char* node = new char [10];
+    bzero(node, 10);
+    if(!strcmp(fd, "NOFD")){
+        strcpy(node, "");
+        return node;
+    }
+    if(strstr(name, "(Permission denied)") != NULL) {
+        strcpy(node, "");
+        return node;
+    }
+    if(strstr(name, "pipe") != NULL){
+        ino_t inode = 0;
+        sscanf(name, "pipe:[%lu]", &inode);
+        sprintf(node, "%lu", inode);
+        return node;
+    }
+    if(strstr(name, "socket") != NULL){
+        ino_t inode = 0;
+        sscanf(name, "socket:[%lu]", &inode);
+        sprintf(node, "%lu", inode);
+        return node;
+    }
+    struct stat buff;
+    stat(name, &buff);
+    ino_t inode = buff.st_ino;
+    sprintf(node, "%lu", inode);
+    return node;
+}
 std::vector<info> get_info(const char *dir, const char *pid){
     std::vector<const char*> match_file_list = match_file(dir);
     char* command = get_command(dir);
@@ -127,7 +155,7 @@ std::vector<info> get_info(const char *dir, const char *pid){
                     tmp.user = user;
                     tmp.fd = fd;
                     tmp.type = get_type(name, fd);
-                    tmp.node = NULL;
+                    tmp.node = get_node(name, fd);
                     tmp.name = name;
                     tmp_list.push_back(tmp); 
                 }
@@ -140,7 +168,7 @@ std::vector<info> get_info(const char *dir, const char *pid){
             tmp.user = user;
             tmp.fd = fd;
             tmp.type = get_type(name, fd);
-            tmp.node = NULL;
+            tmp.node = get_node(name, fd);
             tmp.name = name;
             tmp_list.push_back(tmp);
         }
