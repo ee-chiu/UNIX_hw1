@@ -21,14 +21,17 @@ int id2num(char* id){
 }
 char* get_uid(const char *dir){
     char *status_path = new char[30];
+    bzero(status_path, 30);
     strcpy(status_path, dir);
     strcat(status_path, "/status");
     FILE *status_file = fopen(status_path, "r");
     if(status_file == NULL) perror("fopen");
     char *uid_line = new char[1000];
+    bzero(uid_line, 1000);
     for(int i = 1 ; i <= 9 ; i++)
         fgets(uid_line, 1000, status_file);
     char *uid = new char[10];
+    bzero(uid, 10);
     sscanf(uid_line, "Uid: %s", uid);    
     return uid;
 }
@@ -53,6 +56,7 @@ std::vector<char*> fd_open_mode(const char* path){
     while((dirp = readdir(dp)) != NULL){
         if(!strcmp(dirp->d_name, ".") || !strcmp(dirp->d_name, "..")) continue;
         char* fd_path = new char [300];
+        bzero(fd_path, 300);
         strcpy(fd_path, path);
         strcat(fd_path, "/");
         strcat(fd_path, dirp->d_name);
@@ -60,18 +64,21 @@ std::vector<char*> fd_open_mode(const char* path){
         lstat(fd_path, &buff);
         if( (buff.st_mode & S_IRUSR) && (buff.st_mode & S_IWUSR)) {
             char* fd = new char [10];
+            bzero(fd, 10);
             strcpy(fd, dirp->d_name);
             strcat(fd, "u");
             fd_list.push_back(fd);
         }
         else if(buff.st_mode & S_IRUSR){
             char* fd = new char [10];
+            bzero(fd, 10);
             strcpy(fd, dirp->d_name);
             strcat(fd, "r");
             fd_list.push_back(fd);
         }
         else if(buff.st_mode & S_IWUSR){
             char* fd = new char [10];
+            bzero(fd, 10);
             strcpy(fd, dirp->d_name);
             strcat(fd, "w");
             fd_list.push_back(fd);
@@ -80,25 +87,10 @@ std::vector<char*> fd_open_mode(const char* path){
     return fd_list; 
 }
 
-std::vector<char*> fd_name(const char* file_name, const char* pid){
-    if(!strcmp(file_name, "cwd")) return { (char*) "cwd" };
-    if(!strcmp(file_name, "root")) return { (char*) "rtd" };
-    if(!strcmp(file_name, "exe")) return { (char*) "txt" };
-    if(!strcmp(file_name, "maps")) return { (char*) "mem" };
-    if(!strcmp(file_name, "fd")) {
-        char* path = new char [300];
-        strcpy(path, "/proc/");
-        strcat(path, pid);
-        strcat(path, "/");
-        strcat(path, "fd");
-        return fd_open_mode(path);
-    }
-    return { (char*) "error" };
-}
-
 std::vector<char*> name_link_case(char* path){
     std::vector<char*> name_list;
     char* target_path = new char[300];
+    bzero(target_path, 300);
     int r = readlink(path, target_path, 300);
     if(r < 0 && errno == EACCES) {
         strcat(path, " (Permission denied)");
@@ -115,14 +107,17 @@ std::vector<char*> name_maps_case(char* path){
     if(maps == NULL && errno == EACCES) return {};
     std::map<int, char*> num2name;
     char* line = new char [500]; 
+    bzero(line, 500);
     while(fgets(line, 500, maps) != NULL){
         char* id = new char [300];
+        bzero(id, 300);
         char* save = NULL;
         strcpy(id, (const char*) strtok_r(line, " ", &save));
         for(int i = 1 ; i <= 4 ; i++) strcpy(id, (const char*) strtok_r(NULL, " ", &save));
         int num = id2num(id);
         if(num == 0) continue;
         char* name = new char [300];
+        bzero(name, 300);
         strcpy(name, strtok_r(NULL, " ", &save));
         if(name[strlen(name)-1] == '\n') name[strlen(name)-1] = '\0';
         num2name[num] = name;
@@ -139,6 +134,7 @@ std::vector<char*> name_fd_case(const char* path){
     DIR* dp = opendir(path);
     if(dp == NULL && errno == EACCES) { 
         char* fail_path = new char [300];
+        bzero(fail_path, 300);
         strcpy(fail_path, path);
         strcat(fail_path, " (Permission denied)");
         return { fail_path };
@@ -148,10 +144,12 @@ std::vector<char*> name_fd_case(const char* path){
     while((dirp = readdir(dp)) != NULL){
         if(!strcmp(dirp->d_name, ".") || !strcmp(dirp->d_name, "..")) continue;
         char* fd_path = new char [300];
+        bzero(fd_path, 300);
         strcpy(fd_path, path);
         strcat(fd_path, "/");
         strcat(fd_path, dirp->d_name);
         char* target_path = new char [300];
+        bzero(target_path, 300);
         int r = readlink(fd_path, target_path, 300);
         if(r < 0) perror("readlink");
         name_fd_list.push_back(target_path);
