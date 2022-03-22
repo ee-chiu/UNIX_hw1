@@ -4,6 +4,7 @@
 #include <dirent.h>
 #include <string.h>
 #include <vector>
+#include <regex.h>
 
 struct info{
     char* command;
@@ -21,8 +22,8 @@ char* get_command(const char *dir){
     strcpy(status_path, dir);
     strcat(status_path, "/status");
     FILE* status_file = fopen(status_path, "r");
-    char* command = new char[1000];
-    bzero(command, 1000);
+    char* command = new char[500];
+    bzero(command, 500);
     fscanf(status_file, "Name: %[^\n]", command);
     return command;
 }
@@ -177,26 +178,42 @@ std::vector<info> get_info(const char *dir, const char *pid){
 }
 
 int main(int argc, char** argv){
+    std::map<const char*, int, my_cmp> char2index;
+    for(int i = 1 ; i < argc ; i++) char2index[argv[i]] = i;
+
+    regex_t preg_c;
+    char* pattern_c = new char [500];
+    bool use_command_filter = false;
+    int command_index = -1;
+    if(char2index.find("-c") != char2index.end()){
+       command_index = char2index["-c"] + 1;
+       strcpy(pattern_c, (const char*) argv[command_index]);
+       if(regcomp(&preg_c, pattern_c, 0) != 0) {
+           printf("regcomp error!\n");
+           return 0;
+       }
+       use_command_filter = true;
+    }
+    
     char* type_filter = new char [10];
     bool use_type_filter = false;
     bzero(type_filter, 10);
-    for(int i = 1 ; i < argc ; i++) {
-        if(strstr((const char*) argv[i], "-t")){
-            if(i+1 >= argc) {
-                printf("Invalid TYPE option.\n");
-                return 0;
-            }
-
-            if(strcmp((const char*) argv[i+1], "REG") && strcmp((const char*) argv[i+1], "CHR") && 
-               strcmp((const char*) argv[i+1], "DIR") && strcmp((const char*) argv[i+1], "FIFO") &&
-               strcmp((const char*) argv[i+1], "SOCK") && strcmp((const char*) argv[i+1], "unknown")){
-                printf("Invalid TYPE option.\n");
-                return 0;
-            }
-
-            strcpy(type_filter, (const char*) argv[i+1]);
-            use_type_filter = true;
+    if(char2index.find("-t") != char2index.end()){
+        int type_index = char2index["-t"] + 1;
+        if(type_index >= argc){
+            printf("Invalid TYPE option.\n");
+            return 0;
         }
+
+        if(strcmp((const char*) argv[type_index], "REG") && strcmp((const char*) argv[type_index], "CHR") && 
+            strcmp((const char*) argv[type_index], "DIR") && strcmp((const char*) argv[type_index], "FIFO") &&
+            strcmp((const char*) argv[type_index], "SOCK") && strcmp((const char*) argv[type_index], "unknown")){
+            printf("Invalid TYPE option.\n");
+            return 0;
+        }
+
+        strcpy(type_filter, (const char*) argv[type_index]);
+        use_type_filter = true;
     }
     printf("%s\n", field_name);
 	DIR* dp = Opendir("/proc");
@@ -214,18 +231,23 @@ int main(int argc, char** argv){
     }
 
     for(info tmp : info_list){
-        if(strcmp(tmp.command, "hw1")){
-            if(!use_type_filter || (use_type_filter && !strcmp((const char*) tmp.type, (const char*) type_filter))){
-                printf("%s\t\t", tmp.command);            
-                printf("%s\t\t", tmp.pid);
-                printf("%s\t\t", tmp.user);
-                printf("%s\t\t", tmp.fd);
-                printf("%s\t\t", tmp.type);
-                printf("%s\t\t", tmp.node);
-                printf("%s\t\t", tmp.name);
-                printf("\n");
-            }
+        if(!strcmp(tmp.command, "hw1")) continue;
+        if(use_type_filter && strcmp((const char*) tmp.type, (const char*) type_filter)) continue;
+        if(use_command_filter){
+            regmatch_t matchptr_c[1];
+            const size_t nmatch_c = 1;
+            int status = regexec(&preg_c, tmp.command, nmatch_c, matchptr_c, 0);
+            if(status == REG_NOMATCH) continue;
+            else if(status != 0) { printf("regexec error!\n"); return 0; }
         }
+        printf("%s\t\t", tmp.command);            
+        printf("%s\t\t", tmp.pid);
+        printf("%s\t\t", tmp.user);
+        printf("%s\t\t", tmp.fd);
+        printf("%s\t\t", tmp.type);
+        printf("%s\t\t", tmp.node); 
+        printf("%s\t\t", tmp.name);
+        printf("\n");
     }
     return 0;
 }
