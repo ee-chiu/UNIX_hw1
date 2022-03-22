@@ -215,6 +215,21 @@ int main(int argc, char** argv){
         strcpy(type_filter, (const char*) argv[type_index]);
         use_type_filter = true;
     }
+
+    regex_t preg_f;
+    char* pattern_f = new char [500];
+    bool use_filename_filter = false;
+    int filename_index = -1;
+    if(char2index.find("-f") != char2index.end()){
+       filename_index = char2index["-f"] + 1;
+       strcpy(pattern_f, (const char*) argv[filename_index]);
+       if(regcomp(&preg_f, pattern_f, 0) != 0) {
+           printf("regcomp error!\n");
+           return 0;
+       }
+       use_filename_filter = true;
+    }
+
     printf("%s\n", field_name);
 	DIR* dp = Opendir("/proc");
     struct dirent* dirp;
@@ -237,6 +252,13 @@ int main(int argc, char** argv){
             regmatch_t matchptr_c[1];
             const size_t nmatch_c = 1;
             int status = regexec(&preg_c, tmp.command, nmatch_c, matchptr_c, 0);
+            if(status == REG_NOMATCH) continue;
+            else if(status != 0) { printf("regexec error!\n"); return 0; }
+        }
+        if(use_filename_filter){
+            regmatch_t matchptr_f[1];
+            const size_t nmatch_f = 1;
+            int status = regexec(&preg_f, tmp.name, nmatch_f, matchptr_f, 0);
             if(status == REG_NOMATCH) continue;
             else if(status != 0) { printf("regexec error!\n"); return 0; }
         }
