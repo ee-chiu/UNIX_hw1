@@ -176,8 +176,28 @@ std::vector<info> get_info(const char *dir, const char *pid){
     return tmp_list;
 }
 
-
 int main(int argc, char** argv){
+    char* type_filter = new char [10];
+    bool use_type_filter = false;
+    bzero(type_filter, 10);
+    for(int i = 1 ; i < argc ; i++) {
+        if(strstr((const char*) argv[i], "-t")){
+            if(i+1 >= argc) {
+                printf("Invalid TYPE option.\n");
+                return 0;
+            }
+
+            if(strcmp((const char*) argv[i+1], "REG") && strcmp((const char*) argv[i+1], "CHR") && 
+               strcmp((const char*) argv[i+1], "DIR") && strcmp((const char*) argv[i+1], "FIFO") &&
+               strcmp((const char*) argv[i+1], "SOCK") && strcmp((const char*) argv[i+1], "unknown")){
+                printf("Invalid TYPE option.\n");
+                return 0;
+            }
+
+            strcpy(type_filter, (const char*) argv[i+1]);
+            use_type_filter = true;
+        }
+    }
     printf("%s\n", field_name);
 	DIR* dp = Opendir("/proc");
     struct dirent* dirp;
@@ -195,14 +215,16 @@ int main(int argc, char** argv){
 
     for(info tmp : info_list){
         if(strcmp(tmp.command, "hw1")){
-            printf("%s\t\t", tmp.command);            
-            printf("%s\t\t", tmp.pid);
-            printf("%s\t\t", tmp.user);
-            printf("%s\t\t", tmp.fd);
-            printf("%s\t\t", tmp.type);
-            printf("%s\t\t", tmp.node);
-            printf("%s\t\t", tmp.name);
-            printf("\n");
+            if(!use_type_filter || (use_type_filter && !strcmp((const char*) tmp.type, (const char*) type_filter))){
+                printf("%s\t\t", tmp.command);            
+                printf("%s\t\t", tmp.pid);
+                printf("%s\t\t", tmp.user);
+                printf("%s\t\t", tmp.fd);
+                printf("%s\t\t", tmp.type);
+                printf("%s\t\t", tmp.node);
+                printf("%s\t\t", tmp.name);
+                printf("\n");
+            }
         }
     }
     return 0;
