@@ -156,6 +156,13 @@ std::vector<info> get_info(const char *dir, const char *pid){
                     tmp.type = get_type(name, fd);
                     tmp.node = get_node(name, fd);
                     tmp.name = name;
+                    if(strstr(name, "(deleted)")){
+                        tmp.fd = "DEL";
+                        char* new_name = new char [300];
+                        char* save = NULL;
+                        strcpy(new_name, (const char*) strtok_r(name, " ", &save));
+                        tmp.name = new_name;
+                    }
                     tmp_list.push_back(tmp); 
                 }
                 continue;
@@ -244,7 +251,6 @@ int main(int argc, char** argv){
     }
 
     for(info tmp : info_list){
-        if(!strcmp(tmp.command, "hw1")) continue;
         if(use_type_filter && strcmp((const char*) tmp.type, (const char*) type_filter)) continue;
         if(use_command_filter){
             regmatch_t matchptr_c[1];
