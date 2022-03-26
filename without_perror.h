@@ -97,7 +97,7 @@ std::vector<char*> name_link_case(char* path){
         name_list.push_back(path);
         return name_list;
     }
-    if(r < 0) perror("readlink");
+    if(r < 0) return {}; //perror("readlink");
     name_list.push_back(target_path);
     return name_list;
 }
@@ -105,9 +105,10 @@ std::vector<char*> name_link_case(char* path){
 std::vector<char*> name_maps_case(char* path){
     FILE* maps = fopen(path, "r"); 
     if(maps == NULL && errno == EACCES) return {};
-    std::map<int, char*> num2name;
+    std::map<int, bool> num_exists;
     char* line = new char [500]; 
     bzero(line, 500);
+    std::vector<char*> name_list;
     while(fgets(line, 500, maps) != NULL){
         char* id = new char [300];
         bzero(id, 300);
@@ -116,15 +117,13 @@ std::vector<char*> name_maps_case(char* path){
         for(int i = 1 ; i <= 4 ; i++) strcpy(id, (const char*) strtok_r(NULL, " ", &save));
         int num = id2num(id);
         if(num == 0) continue;
+        if(num_exists.find(num) != num_exists.end()) continue;
         char* name = new char [300];
         bzero(name, 300);
         strcpy(name, strtok_r(NULL, " ", &save));
         if(name[strlen(name)-1] == '\n') name[strlen(name)-1] = '\0';
-        num2name[num] = name;
-    }
-    std::vector<char*> name_list;
-    for(std::map<int, char*>::iterator it = num2name.begin() ; it != num2name.end() ; it++){
-        name_list.push_back(it->second); 
+        name_list.push_back(name);
+        num_exists[num] = true;
     }
     return name_list;
 }
@@ -139,7 +138,7 @@ std::vector<char*> name_fd_case(const char* path){
         strcat(fail_path, " (Permission denied)");
         return { fail_path };
     }
-    else if(dp == NULL) perror("fd opendir");
+    else if(dp == NULL) return {}; //perror("fd opendir");
     struct dirent* dirp;
     while((dirp = readdir(dp)) != NULL){
         if(!strcmp(dirp->d_name, ".") || !strcmp(dirp->d_name, "..")) continue;
@@ -151,8 +150,12 @@ std::vector<char*> name_fd_case(const char* path){
         char* target_path = new char [300];
         bzero(target_path, 300);
         int r = readlink(fd_path, target_path, 300);
-        if(r < 0) perror("readlink");
-        name_fd_list.push_back(target_path);
+        if(r < 0) return {}; //perror("readlink");
+        if(!strstr((const char*) target_path, "deleted")) { name_fd_list.push_back(target_path); continue; }
+        char* new_path = new char [300];
+        char* save = NULL;
+        strcpy(new_path, (const char*) strtok_r(target_path, " ", &save));
+        name_fd_list.push_back(new_path);
     }
     return name_fd_list;
 }

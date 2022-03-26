@@ -143,6 +143,7 @@ std::vector<info> get_info(const char *dir, const char *pid){
     for(const char* file_name : match_file_list){
         std::vector<char*> fd_name_list = get_fd_name(file_name, pid);
         std::vector<char*> name_list = get_name_list(file_name, pid);
+        if(name_list.size() == 0) continue;
         for(size_t i = 0 ; i < fd_name_list.size() ; i++){
             char* fd = fd_name_list[i];
             if(!strcmp(fd, "mem")){
