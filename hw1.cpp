@@ -5,6 +5,7 @@
 #include <string.h>
 #include <vector>
 #include <regex.h>
+#include <pwd.h>
 
 struct info{
     char* command;
@@ -21,7 +22,7 @@ char* get_command(const char *dir){
     bzero(status_path, 30);
     strcpy(status_path, dir);
     strcat(status_path, "/status");
-    FILE* status_file = fopen(status_path, "r");
+    FILE* status_file = Fopen(status_path, "r");
     char* command = new char[500];
     bzero(command, 500);
     fscanf(status_file, "Name: %[^\n]", command);
@@ -29,24 +30,19 @@ char* get_command(const char *dir){
 }
 
 char* get_user(const char* dir){
-    char* this_uid = get_uid(dir);
-    FILE* passwd_file = Fopen("/etc/passwd", "r");
-    char* user_info_line = new char[500];
-    bzero(user_info_line, 500);
-    char* user = new char[100];
-    bzero(user, 100);
-    char* uid = new char[10];
-    bzero(uid, 10);
-    for( ; ; ){
-        fgets(user_info_line, 500, passwd_file);
-        user = strtok(user_info_line, ":");
-        strtok(NULL, ":");
-        uid = strtok(NULL, ":"); 
-        if(strcmp(this_uid, uid) == 0) {
-            break;
-        }
-    }
-    return user;  
+    DIR* dp = opendir(dir);
+    if(dp == NULL) return NULL;
+    uid_t uid = get_uid(dir);  
+    struct passwd pd;
+    struct passwd* pwdptr = &pd;
+    struct passwd* tempPwdPtr;
+    char pwdbuffer[200];
+    int  pwdlinelen = sizeof(pwdbuffer);
+    getpwuid_r(uid, pwdptr, pwdbuffer, pwdlinelen, &tempPwdPtr);
+    char* pw_name = new char [100];
+    bzero(pw_name, 100);
+    strcpy(pw_name, pd.pw_name);
+    return pw_name;
 }
 
 std::vector<char*> get_name_list(const char* file_name, const char* pid){
@@ -140,6 +136,7 @@ char* get_node(const char* name, const char* fd){
 }
 std::vector<info> get_info(const char *dir, const char *pid){
     std::vector<const char*> match_file_list = match_file(dir);
+    if(match_file_list.size() == 0) return {};
     char* command = get_command(dir);
     char* user = get_user(dir);
     std::vector<info> tmp_list;

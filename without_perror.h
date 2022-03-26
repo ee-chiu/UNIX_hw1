@@ -19,7 +19,7 @@ int id2num(char* id){
     for(size_t i = 0 ; i < strlen(id) ; i++) num = num * 10 + (id[i] - '0');
     return num;
 }
-char* get_uid(const char *dir){
+uid_t get_uid(const char *dir){
     char *status_path = new char[30];
     bzero(status_path, 30);
     strcpy(status_path, dir);
@@ -30,9 +30,8 @@ char* get_uid(const char *dir){
     bzero(uid_line, 1000);
     for(int i = 1 ; i <= 9 ; i++)
         fgets(uid_line, 1000, status_file);
-    char *uid = new char[10];
-    bzero(uid, 10);
-    sscanf(uid_line, "Uid: %s", uid);    
+    uid_t uid;
+    sscanf(uid_line, "Uid: %d", &uid);    
     return uid;
 }
 
@@ -40,7 +39,8 @@ std::vector<const char*> match_file(const char* dir){
     std::map<const char*, bool, my_cmp> file_exists;
     std::vector<const char*> target_list = {"cwd", "root", "exe", "maps", "fd"};
     std::vector<const char*> match_file_list;
-    DIR* dp = Opendir(dir);
+    DIR* dp = opendir(dir);
+    if(dp == NULL) return {};
     struct dirent* dirp;
     while((dirp = readdir(dp)) != NULL) file_exists[dirp->d_name] = true;
     for(const char* t : target_list) if(file_exists[t]) match_file_list.push_back(t);
