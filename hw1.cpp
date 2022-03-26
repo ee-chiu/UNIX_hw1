@@ -157,7 +157,9 @@ std::vector<info> get_info(const char *dir, const char *pid){
                     tmp.node = get_node(name, fd);
                     tmp.name = name;
                     if(strstr(name, "(deleted)")){
-                        tmp.fd = "DEL";
+                        char* new_fd = new char [10];
+                        strcpy(new_fd, "DEL");
+                        tmp.fd = new_fd;
                         char* new_name = new char [300];
                         char* save = NULL;
                         strcpy(new_name, (const char*) strtok_r(name, " ", &save));
