@@ -105,6 +105,29 @@ char* get_type(const char* name, const char* fd){
     return type;
 }
 
+char* get_type_2(const char* pid, const char* fd){
+    char* path = new char [300];
+    bzero(path, 300);
+    strcpy(path, "/proc/");
+    strcat(path, pid);
+    strcat(path, "/fd/");
+    char* fd_num = new char [10];
+    strcpy(fd_num, fd);
+    fd_num[strlen(fd_num)-1] = '\0';
+    strcat(path, fd_num);
+    char* type = new char [10];
+    bzero(type, 10);
+    strcpy(type, "(empty)");
+    struct stat buff;
+    if(stat(path, &buff) < 0) perror("get_type_2");
+    if(S_ISDIR(buff.st_mode)) strcpy(type, "DIR");
+    else if(S_ISREG(buff.st_mode)) strcpy(type, "REG");
+    else if(S_ISCHR(buff.st_mode)) strcpy(type, "CHR");
+    else if(S_ISFIFO(buff.st_mode)) strcpy(type, "FIFO");
+    else if(S_ISSOCK(buff.st_mode)) strcpy(type, "SOCK");
+    return type;
+}
+
 char* get_node(const char* name, const char* fd){
     char* node = new char [10];
     bzero(node, 10);
@@ -134,6 +157,27 @@ char* get_node(const char* name, const char* fd){
     sprintf(node, "%lu", inode);
     return node;
 }
+
+char* get_node_2(const char* pid, const char* fd){
+    char* path = new char [300];
+    bzero(path, 300);
+    strcpy(path, "/proc/");
+    strcat(path, pid);
+    strcat(path, "/fd/");
+    char* fd_num = new char [10];
+    strcpy(fd_num, fd);
+    fd_num[strlen(fd_num)-1] = '\0';
+    strcat(path, fd_num);
+    char* node = new char [10];
+    bzero(node, 10);
+    strcpy(node, "(empty)");
+    struct stat buff;
+    if(stat(path, &buff) < 0) perror("get_node_2");
+    ino_t inode = buff.st_ino;
+    sprintf(node, "%lu", inode);
+    return node;
+}
+
 std::vector<info> get_info(const char *dir, const char *pid){
     std::vector<const char*> match_file_list = match_file(dir);
     if(match_file_list.size() == 0) return {};
@@ -178,6 +222,14 @@ std::vector<info> get_info(const char *dir, const char *pid){
             tmp.type = get_type(name, fd);
             tmp.node = get_node(name, fd);
             tmp.name = name;
+            if(strstr(name, "(deleted)")){
+                tmp.type = get_type_2(pid, fd);         
+                tmp.node = get_node_2(pid, fd);
+                char* new_name = new char [300];
+                char* save = NULL;
+                strcpy(new_name, (const char*) strtok_r(name, " ", &save));
+                tmp.name = new_name;
+            }
             tmp_list.push_back(tmp);
         }
     }

@@ -151,11 +151,7 @@ std::vector<char*> name_fd_case(const char* path){
         bzero(target_path, 300);
         int r = readlink(fd_path, target_path, 300);
         if(r < 0) return {}; //perror("readlink");
-        if(!strstr((const char*) target_path, "deleted")) { name_fd_list.push_back(target_path); continue; }
-        char* new_path = new char [300];
-        char* save = NULL;
-        strcpy(new_path, (const char*) strtok_r(target_path, " ", &save));
-        name_fd_list.push_back(new_path);
+        name_fd_list.push_back(target_path);
     }
     return name_fd_list;
 }
