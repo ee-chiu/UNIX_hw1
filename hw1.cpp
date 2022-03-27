@@ -87,11 +87,11 @@ char* get_type(const char* name, const char* fd){
         strcpy(type, "unknown");
         return type;
     }
-    if(strstr(name, "pipe") != NULL){
+    if(strstr(name, "pipe:") != NULL){
         strcpy(type, "FIFO");
         return type;
     }
-    if(strstr(name, "socket") != NULL){
+    if(strstr(name, "socket:") != NULL){
         strcpy(type, "SOCK");
         return type;
     }
@@ -116,13 +116,13 @@ char* get_node(const char* name, const char* fd){
         strcpy(node, "");
         return node;
     }
-    if(strstr(name, "pipe") != NULL){
+    if(strstr(name, "pipe:") != NULL){
         ino_t inode = 0;
         sscanf(name, "pipe:[%lu]", &inode);
         sprintf(node, "%lu", inode);
         return node;
     }
-    if(strstr(name, "socket") != NULL){
+    if(strstr(name, "socket:") != NULL){
         ino_t inode = 0;
         sscanf(name, "socket:[%lu]", &inode);
         sprintf(node, "%lu", inode);
