@@ -4,6 +4,7 @@
 #include<unistd.h>
 #include<errno.h>
 #include<map>
+#include<fcntl.h>
 const char* field_name = "COMMAND         PID             USER            FD              TYPE            NODE            NAME";
 
 bool isnum(char* d_name){
@@ -60,27 +61,33 @@ std::vector<char*> fd_open_mode(const char* path){
         strcpy(fd_path, path);
         strcat(fd_path, "/");
         strcat(fd_path, dirp->d_name);
-        struct stat buff;
-        lstat(fd_path, &buff);
-        if( (buff.st_mode & S_IRUSR) && (buff.st_mode & S_IWUSR)) {
+        FILE* fd_ = Fopen((const char*) fd_path, "r");
+        char* pos = new char [30];
+        fgets(pos, 30, fd_);
+        char* flags = new char [30];
+        bzero(flags, 30);
+        fgets(flags, 30, fd_);
+        mode_t st_mode = 0;
+        sscanf(flags, "flags: %u", &st_mode);
+        if(st_mode & O_RDWR) {
             char* fd = new char [10];
             bzero(fd, 10);
             strcpy(fd, dirp->d_name);
             strcat(fd, "u");
             fd_list.push_back(fd);
         }
-        else if(buff.st_mode & S_IRUSR){
-            char* fd = new char [10];
-            bzero(fd, 10);
-            strcpy(fd, dirp->d_name);
-            strcat(fd, "r");
-            fd_list.push_back(fd);
-        }
-        else if(buff.st_mode & S_IWUSR){
+        else if(st_mode & O_WRONLY) {
             char* fd = new char [10];
             bzero(fd, 10);
             strcpy(fd, dirp->d_name);
             strcat(fd, "w");
+            fd_list.push_back(fd);
+        }
+        else {
+            char* fd = new char [10];
+            bzero(fd, 10);
+            strcpy(fd, dirp->d_name);
+            strcat(fd, "r");
             fd_list.push_back(fd);
         }
     }

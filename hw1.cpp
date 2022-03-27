@@ -69,7 +69,7 @@ std::vector<char*> get_fd_name(const char* file_name, const char* pid){
         strcpy(path, "/proc/");
         strcat(path, pid);
         strcat(path, "/");
-        strcat(path, "fd");
+        strcat(path, "fdinfo");
         return fd_open_mode(path);
     }
     return { (char*) "error" };
