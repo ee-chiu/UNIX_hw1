@@ -252,6 +252,7 @@ int main(int argc, char** argv){
             }
     }
 
+    std::map<char*, std::map<char*, bool, my_cmp>, my_cmp> pid2inode_exists;
     for(info tmp : info_list){
         if(use_type_filter && strcmp((const char*) tmp.type, (const char*) type_filter)) continue;
         if(use_command_filter){
@@ -268,6 +269,10 @@ int main(int argc, char** argv){
             if(status == REG_NOMATCH) continue;
             else if(status != 0) { printf("regexec error!\n"); return 0; }
         }
+        if(!strcmp((const char*) tmp.fd, "mem")){
+            if(pid2inode_exists[tmp.pid].find(tmp.node) != pid2inode_exists[tmp.pid].end()) continue;
+        }
+        if(!strcmp((const char*) tmp.fd, "txt")) pid2inode_exists[tmp.pid][tmp.node] = true;
         printf("%s\t\t", tmp.command);            
         printf("%s\t\t", tmp.pid);
         printf("%s\t\t", tmp.user);
